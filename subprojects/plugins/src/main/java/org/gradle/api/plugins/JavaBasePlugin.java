@@ -60,6 +60,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import static org.gradle.api.internal.lambdas.SerializableLambdas.action;
 
@@ -162,7 +163,7 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
 
             ConfigurationContainer configurations = project.getConfigurations();
 
-            defineConfigurationsForSourceSet(sourceSet, configurations, pluginConvention);
+            defineConfigurationsForSourceSet(sourceSet, configurations);
             definePathsForSourceSet(sourceSet, outputConventionMapping, project);
 
             createProcessResourcesTask(sourceSet, sourceSet.getResources(), project);
@@ -233,7 +234,7 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
         sourceSet.getResources().srcDir("src/" + sourceSet.getName() + "/resources");
     }
 
-    private void defineConfigurationsForSourceSet(SourceSet sourceSet, ConfigurationContainer configurations, final JavaPluginConvention convention) {
+    private void defineConfigurationsForSourceSet(SourceSet sourceSet, ConfigurationContainer configurations) {
         String compileConfigurationName = sourceSet.getCompileConfigurationName();
         String implementationConfigurationName = sourceSet.getImplementationConfigurationName();
         String runtimeConfigurationName = sourceSet.getRuntimeConfigurationName();
@@ -314,30 +315,20 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
     }
 
     private void configureCompileDefaults(final Project project, final JavaPluginConvention javaConvention) {
-        project.getTasks().withType(AbstractCompile.class).configureEach(new Action<AbstractCompile>() {
-            @Override
-            public void execute(final AbstractCompile compile) {
-                ConventionMapping conventionMapping = compile.getConventionMapping();
-                conventionMapping.map("sourceCompatibility", new Callable<Object>() {
-                    @Override
-                    public Object call() {
-                        if (compile.getRelease().isPresent()) {
-                            return JavaVersion.toVersion(compile.getRelease().get()).toString();
-                        }
-                        return javaConvention.getSourceCompatibility().toString();
-                    }
-                });
-                conventionMapping.map("targetCompatibility", new Callable<Object>() {
-                    @Override
-                    public Object call() {
-                        if (compile.getRelease().isPresent()) {
-                            return JavaVersion.toVersion(compile.getRelease().get()).toString();
-                        }
-                        return javaConvention.getTargetCompatibility().toString();
-                    }
-                });
-            }
+        project.getTasks().withType(AbstractCompile.class).configureEach(compile -> {
+            ConventionMapping conventionMapping = compile.getConventionMapping();
+            conventionMapping.map("sourceCompatibility", determineCompatibility(compile, javaConvention::getSourceCompatibility));
+            conventionMapping.map("targetCompatibility", determineCompatibility(compile, javaConvention::getTargetCompatibility));
         });
+    }
+
+    private Callable<Object> determineCompatibility(AbstractCompile compile, Supplier<JavaVersion> javaVersionSupplier) {
+        return () -> {
+            if (compile.getRelease().isPresent()) {
+                return JavaVersion.toVersion(compile.getRelease().get()).toString();
+            }
+            return javaVersionSupplier.get().toString();
+        };
     }
 
     private void configureJavaDoc(final Project project, final JavaPluginConvention convention) {

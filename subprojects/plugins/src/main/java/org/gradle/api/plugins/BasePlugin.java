@@ -91,13 +91,10 @@ public class BasePlugin implements Plugin<Project> {
                 task.getDestinationDirectory().convention(pluginConvention.getDistsDirectory());
             }
 
-            task.getArchiveVersion().convention(
-                project.provider(() -> project.getVersion() == Project.DEFAULT_VERSION ? null : project.getVersion().toString())
+            task.getArchiveVersion().convention(project.provider(() -> project.getVersion() == Project.DEFAULT_VERSION ? null : project.getVersion().toString())
             );
 
-            task.getArchiveBaseName().convention(
-                project.provider(() -> pluginConvention.getArchivesBaseName())
-            );
+            task.getArchiveBaseName().convention(project.provider(() -> pluginConvention.getArchivesBaseName()));
         });
     }
 

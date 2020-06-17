@@ -426,6 +426,7 @@ public class JavaPlugin implements Plugin<ProjectInternal> {
         project.getTasks().named(JavaBasePlugin.CHECK_TASK_NAME, task -> {
             task.dependsOn(test);
         });
+        project.getTasks().named(JavaBasePlugin.CHECK_TASK_NAME, task -> task.dependsOn(test));
     }
 
     private void configureConfigurations(Project project, JavaPluginConvention convention) {
