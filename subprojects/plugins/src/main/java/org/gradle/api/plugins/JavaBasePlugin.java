@@ -324,8 +324,11 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
 
     private Callable<Object> determineCompatibility(AbstractCompile compile, Supplier<JavaVersion> javaVersionSupplier) {
         return () -> {
-            if (compile.getRelease().isPresent()) {
-                return JavaVersion.toVersion(compile.getRelease().get()).toString();
+            if (compile instanceof JavaCompile) {
+                JavaCompile javaCompile = (JavaCompile) compile;
+                if (javaCompile.getOptions().getRelease().isPresent()) {
+                    return JavaVersion.toVersion(javaCompile.getOptions().getRelease().get()).toString();
+                }
             }
             return javaVersionSupplier.get().toString();
         };
