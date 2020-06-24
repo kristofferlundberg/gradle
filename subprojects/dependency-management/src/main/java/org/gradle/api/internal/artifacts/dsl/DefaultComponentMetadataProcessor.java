@@ -43,6 +43,7 @@ import org.gradle.internal.action.DefaultConfigurableRules;
 import org.gradle.internal.action.InstantiatingAction;
 import org.gradle.internal.component.external.model.ModuleComponentResolveMetadata;
 import org.gradle.internal.component.external.model.MutableModuleComponentResolveMetadata;
+import org.gradle.internal.component.external.model.VariantDerivationStrategy;
 import org.gradle.internal.component.external.model.ivy.DefaultIvyModuleResolveMetadata;
 import org.gradle.internal.component.external.model.ivy.RealisedIvyModuleResolveMetadata;
 import org.gradle.internal.component.external.model.maven.DefaultMavenModuleResolveMetadata;
@@ -69,7 +70,9 @@ public class DefaultComponentMetadataProcessor implements ComponentMetadataProce
     private final static boolean FORCE_REALIZE = Boolean.getBoolean("org.gradle.integtest.force.realize.metadata");
 
     private static final Transformer<ModuleComponentResolveMetadata, WrappingComponentMetadataContext> DETAILS_TO_RESULT = componentMetadataContext -> {
-        ModuleComponentResolveMetadata metadata = componentMetadataContext.getMutableMetadata().asImmutable();
+        ModuleComponentResolveMetadata metadata = componentMetadataContext
+            .getImmutableMetadata()
+            .withDerivationStrategy(componentMetadataContext.getVariantDerivationStrategy());
         return realizeMetadata(metadata);
     };
 
@@ -150,8 +153,9 @@ public class DefaultComponentMetadataProcessor implements ComponentMetadataProce
     }
 
     @Override
-    public ModuleComponentResolveMetadata processMetadata(ModuleComponentResolveMetadata metadata) {
-        metadata.getVariantMetadataRules().setVariantDerivationStrategy(metadataRuleContainer.getVariantDerivationStrategy());
+    public ModuleComponentResolveMetadata processMetadata(ModuleComponentResolveMetadata origin) {
+        VariantDerivationStrategy curStrategy = metadataRuleContainer.getVariantDerivationStrategy();
+        ModuleComponentResolveMetadata metadata = origin.withDerivationStrategy(curStrategy);
         ModuleComponentResolveMetadata updatedMetadata;
         if (metadataRuleContainer.isEmpty()) {
             updatedMetadata = maybeForceRealisation(metadata);
@@ -179,7 +183,7 @@ public class DefaultComponentMetadataProcessor implements ComponentMetadataProce
         if (!updatedMetadata.getStatusScheme().contains(updatedMetadata.getStatus())) {
             throw new ModuleVersionResolveException(updatedMetadata.getModuleVersionId(), () -> String.format("Unexpected status '%s' specified for %s. Expected one of: %s", updatedMetadata.getStatus(), updatedMetadata.getId().getDisplayName(), updatedMetadata.getStatusScheme()));
         }
-        return updatedMetadata;
+        return updatedMetadata.withDerivationStrategy(curStrategy);
     }
 
     protected ComponentMetadataDetails createDetails(MutableModuleComponentResolveMetadata mutableMetadata) {

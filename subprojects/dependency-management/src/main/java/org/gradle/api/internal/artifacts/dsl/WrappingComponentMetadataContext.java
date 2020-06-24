@@ -25,6 +25,7 @@ import org.gradle.api.internal.artifacts.repositories.resolver.DependencyConstra
 import org.gradle.api.internal.artifacts.repositories.resolver.DirectDependencyMetadataImpl;
 import org.gradle.internal.component.external.model.ModuleComponentResolveMetadata;
 import org.gradle.internal.component.external.model.MutableModuleComponentResolveMetadata;
+import org.gradle.internal.component.external.model.VariantDerivationStrategy;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.typeconversion.NotationParser;
 
@@ -71,9 +72,17 @@ class WrappingComponentMetadataContext implements ComponentMetadataContext {
         return details;
     }
 
+    VariantDerivationStrategy getVariantDerivationStrategy() {
+        return metadata.getVariantDerivationStrategy();
+    }
+
     MutableModuleComponentResolveMetadata getMutableMetadata() {
         createMutableMetadataIfNeeded();
         return mutableMetadata;
+    }
+
+    ModuleComponentResolveMetadata getImmutableMetadata() {
+        return metadata;
     }
 
     private void createMutableMetadataIfNeeded() {
